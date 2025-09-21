@@ -3,6 +3,25 @@ import time
 import sys
 import os
 from config_manager import config
+import ollama
+
+def is_llama3_1_running():
+    try:
+        # Attempt to get a response from llama3.1
+        response = ollama.chat(model='llama3.1', messages=[
+            {'role': 'user', 'content': 'Hello'}
+        ])
+        # If a response is received, the model is likely running and accessible
+        return True
+    except ollama.ResponseError as e:
+        # Handle specific Ollama errors, e.g., model not found or server not running
+        print(f"Ollama error: {e}")
+        return False
+    except Exception as e:
+        # Handle other potential connection or general errors
+        print(f"An unexpected error occurred: {e}")
+        return False
+
 
 def start_service(command, name, delay=2):
     """Start a service with the given command"""
@@ -14,10 +33,24 @@ def start_service(command, name, delay=2):
 def main():
     """Start all services"""
     print("🚀 Starting FastAPI Proxy System Demo...")
-    
+    print("Checking if Ollama run llama3.1 is running...")
+
+    if is_llama3_1_running():
+        print("✅ Ollama run llama3.1 appears to be running.")
+
+    else:
+        print("❌ Ollama run llama3.1 does not appear to be running or accessible.")
+        print("📝 Setup instructions:")
+        print("   1. (if not done already) Install Ollama: https://ollama.ai")
+        print("   2. (if not done already) Start Ollama: ollama serve")
+        print("   3. (if not done already) Pull Llama 3.1: ollama pull llama3.1")
+        print("   4. Run Llama 3.1: ollama run llama3.1")
+        sys.exit("Please start Ollama run llama3.1 and try again.")
+        
+
     # Get configuration
     proxy_config = config.get_proxy_config()
-    chat_config = config.get_chat_server_config() 
+    chat_config = config.get_chat_server_config()
     chainlit_config = config.get_chainlit_config()
     
     # Start chat server

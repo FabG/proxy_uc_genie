@@ -155,23 +155,6 @@ async def generate_ollama_response(message: str, model: str = "llama3.1", conver
             "error": str(e)
         }
 
-@chat_app.on_event("startup")
-async def startup_event():
-    """Check Ollama connection on startup"""
-    logger.info("🚀 Starting Ollama Chat Server...")
-    
-    # Check Ollama connection
-    is_connected = await check_ollama_connection()
-    
-    if is_connected:
-        logger.info("✅ Ollama connection verified - Llama 3.1 ready!")
-    else:
-        logger.warning("⚠️  Ollama connection issues detected")
-        logger.info("📝 Setup instructions:")
-        logger.info("   1. Install Ollama: https://ollama.ai")
-        logger.info("   2. Start Ollama: ollama serve")
-        logger.info("   3. Pull Llama 3.1: ollama pull llama3.1")
-
 @chat_app.get("/")
 async def chat_root():
     return {
@@ -351,9 +334,11 @@ async def debug_endpoint(request: Request):
     }
 
 if __name__ == "__main__":
+    import sys
+
     chat_config = config.get_chat_server_config()
     uvicorn.run(
-        chat_app, 
-        host=chat_config.get('host', '0.0.0.0'), 
+        chat_app,
+        host=chat_config.get('host', '0.0.0.0'),
         port=chat_config.get('port', 8002)
     )

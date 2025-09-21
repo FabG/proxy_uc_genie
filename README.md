@@ -48,7 +48,12 @@ Should show llama3.1 in the list
 
 
 ## Usage
-Run:
+Run in one terminal:
+```bash
+ollama run llama3.1
+```
+
+And in the other terminal:
 ```bash
 uv run start_all.py
 ```
