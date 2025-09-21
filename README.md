@@ -58,6 +58,16 @@ And in the other terminal:
 uv run start_all.py
 ```
 
+For this POC, we provide the ability to change use case id over time ad follow:
+  1. Start with default: App starts with the configured default use-case ID
+  2. Change use-case ID: Type /use-case 100001 to switch to a different ID
+  3. Check current ID: Type /current-use-case to see what's currently set
+  4. Get help: Type /help for command reference
+  5. Chat normally: All regular messages use the current use-case ID
+
+  The system now provides full flexibility for users to dynamically change their use-case ID without restarting the application, and all HTTP
+  headers to the chat server will use the user's selected use-case ID.
+
 ---
 ## POC
 

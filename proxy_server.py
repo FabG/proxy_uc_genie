@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 import httpx
 import json
 import logging
@@ -35,39 +36,51 @@ BACKEND_BASE_URL = proxy_config.get('backend_url', 'http://localhost:8002')
 @app.middleware("http")
 async def validate_use_case_middleware(request: Request, call_next):
     """Middleware to validate X-Use-Case-ID header"""
-    
-    # Skip validation for root path and docs
-    if request.url.path in ["/", "/docs", "/openapi.json", "/config", "/config/reload"]:
+
+    try:
+        # Skip validation for root path and docs
+        if request.url.path in ["/", "/docs", "/openapi.json", "/config", "/config/reload"]:
+            response = await call_next(request)
+            return response
+
+        use_case_id = request.headers.get("X-Use-Case-ID")
+
+        # Log the request for monitoring
+        logger.info(f"Request: {request.method} {request.url.path} - Use-Case-ID: {use_case_id}")
+
+        if security_config.get('require_use_case_header', True) and not use_case_id:
+            if security_config.get('log_rejected_requests', True):
+                logger.warning(f"Rejected request: Missing X-Use-Case-ID header from {request.client.host}")
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Missing required header: X-Use-Case-ID"}
+            )
+
+        if use_case_id and not config.is_use_case_allowed(use_case_id):
+            if security_config.get('log_rejected_requests', True):
+                logger.warning(f"Rejected request: Unauthorized use case '{use_case_id}' from {request.client.host}")
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "detail": f"Unauthorized use case: {use_case_id}. Allowed values: {config.get_allowed_use_cases()}",
+                    "use_case_id": use_case_id,
+                    "allowed_use_cases": config.get_allowed_use_cases()
+                }
+            )
+
+        if use_case_id:
+            description = config.get_use_case_description(use_case_id)
+            logger.info(f"Approved request: Use case '{use_case_id}' ({description}) is authorized")
+
         response = await call_next(request)
         return response
-    
-    use_case_id = request.headers.get("X-Use-Case-ID")
-    
-    # Log the request for monitoring
-    logger.info(f"Request: {request.method} {request.url.path} - Use-Case-ID: {use_case_id}")
-    
-    if security_config.get('require_use_case_header', True) and not use_case_id:
-        if security_config.get('log_rejected_requests', True):
-            logger.warning(f"Rejected request: Missing X-Use-Case-ID header from {request.client.host}")
-        raise HTTPException(
-            status_code=400, 
-            detail="Missing required header: X-Use-Case-ID"
+
+    except Exception as e:
+        logger.error(f"Error in use case validation middleware: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Internal middleware error: {str(e)}"}
         )
-    
-    if use_case_id and not config.is_use_case_allowed(use_case_id):
-        if security_config.get('log_rejected_requests', True):
-            logger.warning(f"Rejected request: Unauthorized use case '{use_case_id}' from {request.client.host}")
-        raise HTTPException(
-            status_code=403, 
-            detail=f"Unauthorized use case: {use_case_id}. Allowed values: {config.get_allowed_use_cases()}"
-        )
-    
-    if use_case_id:
-        description = config.get_use_case_description(use_case_id)
-        logger.info(f"Approved request: Use case '{use_case_id}' ({description}) is authorized")
-    
-    response = await call_next(request)
-    return response
 
 @app.get("/")
 async def root():
