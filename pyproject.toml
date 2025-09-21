@@ -1,0 +1,7 @@
+[project]
+name = "proxy-uc-genie"
+version = "0.1.0"
+description = "A lightweight proxy to allow or deny traffic to Data Bricks Genie api"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
