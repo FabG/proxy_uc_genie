@@ -4,4 +4,11 @@ version = "0.1.0"
 description = "A lightweight proxy to allow or deny traffic to Data Bricks Genie api"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "chainlit>=2.8.0",
+    "fastapi>=0.116.2",
+    "httpx>=0.28.1",
+    "ollama>=0.5.4",
+    "pydantic>=2.11.9",
+    "uvicorn>=0.36.0",
+]
