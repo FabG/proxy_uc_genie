@@ -1,8 +1,7 @@
 # Light Proxy for restricted access to DataBricks Genie API
 
 Light poc to restrict access to DataBrikcs Genie API basedon some policy.
-We will implement a lightweight proxy that checks on policy condition before allowing or blocking traffic to [DataBricks Genie API]https://docs.databricks.com/aws/en/genie/conversation-api)
-
+We will implement a lightweight proxy that checks on policy condition before allowing or blocking traffic to [DataBricks Genie API](https://docs.databricks.com/aws/en/genie/conversation-api)
 
 
 ![proxy image](images/proxy_uc_ginie.drawio.png)
@@ -23,6 +22,29 @@ To install them run
 uv sync
 ```
 
+###  Setup Instructions for Ollama:
+1. Install Ollama:
+Visit https://ollama.ai and install for your OS
+
+Or use curl (Linux/Mac):
+```bash
+curl -fsSL https://ollama.ai/install.sh | sh
+```
+2. Start Ollama Service:
+```bash
+ollama serve
+```
+3. Pull Llama 3.1:
+```bash
+ollama pull llama3.1
+```
+4. Verify Installation:
+```
+bash
+ollama list
+```
+Should show llama3.1 in the list
+
 
 
 ## Usage
@@ -31,7 +53,11 @@ Run:
 uv run start_all.py
 ```
 
+---
+## POC
 
+For a light POC, we will go with `Fast API` for the proxy, `Ollama` for the Chat server to mimin DataBricks chat api, and `Chainlit` for the app chat client as follow:
+![proxy poc image](images/proxy_uc_ginie-poc.drawio.png)
 
 ---
 ## 🏗️ System Architecture
@@ -70,6 +96,72 @@ uv run test_proxy.py
 ```
 This will test valid use cases, invalid ones, and missing headers to demonstrate the proxy's access control in action.
 The system showcases real-world proxy patterns while being lightweight enough for proof-of-concept development!
+
+### 🛠️ Config CLI:
+This tool makes it easy to manage your use case allowlist without touching code!RetryClaude does not have the ability to run the code it generates yet.
+#### 🎯 Features:
+✅ Error handling - Prevents duplicates, handles missing files  
+✅ Backup creation - Automatic backups before destructive operations  
+✅ Bulk operations - Import/export multiple use cases  
+✅ Validation - Check use case permissions  
+✅ Help system - Built-in help with examples  
+✅ Safe operations - Confirmation prompts for destructive actions  z
+
+#### Basic Commands:
+
+- list - Show all current use cases
+- add - Add a new use case (with optional description)
+- remove - Remove an existing use case
+- validate - Check if a use case ID is allowed
+- show - Display full configuration
+-reset - Reset to default configuration (with backup)
+
+#### Advanced Commands:
+
+- bulk-add - Import use cases from a text file
+- export - Export use cases to a text file
+
+Usage example
+```bash
+# List all current use cases
+python config_cli.py list
+
+# Add a new use case with description
+python config_cli.py add "200000" -d "New mobile application"
+
+# Remove a use case
+python config_cli.py remove "100050"
+
+# Validate if a use case is allowed
+python config_cli.py validate "100000"
+
+# Show full configuration
+python config_cli.py show
+
+# Bulk import from file
+python config_cli.py bulk-add use_cases.txt
+
+# Export to file
+python config_cli.py export my_use_cases.txt
+
+# Reset to defaults (creates backup)
+python config_cli.py reset
+```
+
+Bulk command example:
+Create a text file like `use_cases.txt`:
+```text
+# Comments start with #
+100000:Primary client application
+100050:Mobile app v2
+101966:Analytics dashboard
+102550:Admin panel interface
+103366:External API integration
+
+# Lines without colons are use cases without descriptions
+200000
+300000
+```
 
 ---
 

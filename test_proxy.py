@@ -1,8 +1,11 @@
 import httpx
 import asyncio
 import json
+from config_manager import config
 
-PROXY_URL = "http://localhost:8001"
+# Get proxy URL from config
+proxy_config = config.get_proxy_config()
+PROXY_URL = f"http://localhost:{proxy_config.get('port', 8001)}"
 
 async def test_use_case(use_case_id: str, should_succeed: bool = True):
     """Test a specific use case ID"""
@@ -14,7 +17,7 @@ async def test_use_case(use_case_id: str, should_succeed: bool = True):
     
     payload = {
         "message": f"Test message from {use_case_id}",
-        "model": "llama2"
+        "model": "llama3.1"  # Updated to use Llama 3.1
     }
     
     try:
@@ -43,15 +46,17 @@ async def run_tests():
     """Run comprehensive tests"""
     print("🧪 Testing FastAPI Proxy with Use-Case-ID Header Control\n")
     
+    # Get allowed use cases from config
+    allowed_cases = config.get_allowed_use_cases()
+    
     # Test valid use cases (should succeed)
     print("Testing VALID use case IDs:")
-    valid_cases = ["100000", "100050", "101966", "102550", "103366"]
-    for case in valid_cases:
+    for case in allowed_cases:
         await test_use_case(case, should_succeed=True)
     
     print("\nTesting INVALID use case IDs:")
     # Test invalid use cases (should fail)
-    invalid_cases = ["hacker-client", "unauthorized-app", ""]
+    invalid_cases = ["999999", "chainlit-client", "unauthorized-app", ""]
     for case in invalid_cases:
         await test_use_case(case, should_succeed=False)
     
@@ -69,6 +74,3 @@ async def run_tests():
             print(f"   Error: {response.text}")
     except Exception as e:
         print(f"❌ ERROR: No header -> {str(e)}")
-
-if __name__ == "__main__":
-    asyncio.run(run_tests())

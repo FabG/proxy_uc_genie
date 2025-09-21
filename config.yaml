@@ -1,0 +1,45 @@
+# FastAPI Proxy Configuration
+proxy:
+  host: "0.0.0.0"
+  port: 8001
+  backend_url: "http://localhost:8002"
+  
+# Chat Server Configuration  
+chat_server:
+  host: "0.0.0.0"
+  port: 8002
+  
+# Chainlit Client Configuration
+chainlit:
+  host: "0.0.0.0" 
+  port: 8000
+  proxy_url: "http://localhost:8001"
+  default_use_case_id: "100000"
+
+# Access Control Configuration
+access_control:
+  allowed_use_cases:
+    - "100000"
+    - "100050" 
+    - "101966"
+    - "102550"
+    - "103366"
+  
+  # Optional: Use case descriptions for documentation
+  use_case_descriptions:
+    "100000": "Primary client application"
+    "100050": "Mobile application v2"
+    "101966": "Analytics dashboard"
+    "102550": "Admin panel interface"
+    "103366": "External API integration"
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+# Security Settings
+security:
+  require_use_case_header: true
+  case_sensitive_matching: false
+  log_rejected_requests: true

@@ -3,11 +3,17 @@ from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import json
 import logging
+import yaml
 from typing import Dict, Any
 import uvicorn
+from config_manager import config
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+log_config = config.config.get('logging', {})
+logging.basicConfig(
+    level=getattr(logging, log_config.get('level', 'INFO')),
+    format=log_config.get('format', '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Use-Case-ID Proxy", description="Proxy server with header-based access control")
@@ -21,24 +27,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Allowlist of valid use case IDs
-ALLOWED_USE_CASES = {
-    "100000",
-    "100050",
-    "101966", 
-    "102550",
-    "103366"
-}
-
-# Backend server configuration
-BACKEND_BASE_URL = "http://localhost:8002"  # Chat server
+# Get configuration
+proxy_config = config.get_proxy_config()
+security_config = config.get_security_config()
+BACKEND_BASE_URL = proxy_config.get('backend_url', 'http://localhost:8002')
 
 @app.middleware("http")
 async def validate_use_case_middleware(request: Request, call_next):
     """Middleware to validate X-Use-Case-ID header"""
     
     # Skip validation for root path and docs
-    if request.url.path in ["/", "/docs", "/openapi.json"]:
+    if request.url.path in ["/", "/docs", "/openapi.json", "/config", "/config/reload"]:
         response = await call_next(request)
         return response
     
@@ -47,21 +46,26 @@ async def validate_use_case_middleware(request: Request, call_next):
     # Log the request for monitoring
     logger.info(f"Request: {request.method} {request.url.path} - Use-Case-ID: {use_case_id}")
     
-    if not use_case_id:
-        logger.warning(f"Rejected request: Missing X-Use-Case-ID header from {request.client.host}")
+    if security_config.get('require_use_case_header', True) and not use_case_id:
+        if security_config.get('log_rejected_requests', True):
+            logger.warning(f"Rejected request: Missing X-Use-Case-ID header from {request.client.host}")
         raise HTTPException(
             status_code=400, 
             detail="Missing required header: X-Use-Case-ID"
         )
     
-    if use_case_id not in ALLOWED_USE_CASES:
-        logger.warning(f"Rejected request: Unauthorized use case '{use_case_id}' from {request.client.host}")
+    if use_case_id and not config.is_use_case_allowed(use_case_id):
+        if security_config.get('log_rejected_requests', True):
+            logger.warning(f"Rejected request: Unauthorized use case '{use_case_id}' from {request.client.host}")
         raise HTTPException(
             status_code=403, 
-            detail=f"Unauthorized use case: {use_case_id}. Allowed values: {list(ALLOWED_USE_CASES)}"
+            detail=f"Unauthorized use case: {use_case_id}. Allowed values: {config.get_allowed_use_cases()}"
         )
     
-    logger.info(f"Approved request: Use case '{use_case_id}' is authorized")
+    if use_case_id:
+        description = config.get_use_case_description(use_case_id)
+        logger.info(f"Approved request: Use case '{use_case_id}' ({description}) is authorized")
+    
     response = await call_next(request)
     return response
 
@@ -71,13 +75,40 @@ async def root():
     return {
         "service": "Use-Case-ID Proxy",
         "status": "running",
-        "allowed_use_cases": list(ALLOWED_USE_CASES)
+        "allowed_use_cases": config.get_allowed_use_cases(),
+        "backend_url": BACKEND_BASE_URL
     }
 
 @app.get("/health")
 async def health():
     """Health check endpoint"""
-    return {"status": "healthy", "allowed_use_cases": list(ALLOWED_USE_CASES)}
+    return {"status": "healthy", "allowed_use_cases": config.get_allowed_use_cases()}
+
+@app.get("/config")
+async def get_config():
+    """Get current configuration (for debugging)"""
+    return {
+        "allowed_use_cases": config.get_allowed_use_cases(),
+        "use_case_descriptions": {
+            case: config.get_use_case_description(case) 
+            for case in config.get_allowed_use_cases()
+        },
+        "security_config": config.get_security_config(),
+        "backend_url": BACKEND_BASE_URL
+    }
+
+@app.post("/config/reload")
+async def reload_config():
+    """Reload configuration from file"""
+    try:
+        config.reload_config()
+        return {
+            "status": "success", 
+            "message": "Configuration reloaded",
+            "allowed_use_cases": config.get_allowed_use_cases()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reloading config: {str(e)}")
 
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_request(request: Request, path: str):
@@ -118,4 +149,9 @@ async def proxy_request(request: Request, path: str):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    proxy_config = config.get_proxy_config()
+    uvicorn.run(
+        app, 
+        host=proxy_config.get('host', '0.0.0.0'), 
+        port=proxy_config.get('port', 8001)
+    )

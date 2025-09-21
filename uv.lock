@@ -1821,6 +1821,7 @@ dependencies = [
     { name = "httpx" },
     { name = "ollama" },
     { name = "pydantic" },
+    { name = "pyyaml" },
     { name = "uvicorn" },
 ]
 
@@ -1831,6 +1832,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "ollama", specifier = ">=0.5.4" },
     { name = "pydantic", specifier = ">=2.11.9" },
+    { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "uvicorn", specifier = ">=0.36.0" },
 ]
 
