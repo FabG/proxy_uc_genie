@@ -1,10 +1,18 @@
-# Light Proxy for restricted access to DataBricks Genie API
+# Light Proxy for restricted access to an LLM chat API
 
-Light poc to restrict access to DataBrikcs Genie API basedon some policy.
-We will implement a lightweight proxy that checks on policy condition before allowing or blocking traffic to [DataBricks Genie API](https://docs.databricks.com/aws/en/genie/conversation-api)
+Light poc to restrict access to an LLM Chat api based on some policy.  
+We will implement a lightweight proxy that checks on policy condition before allowing or blocking traffic to the API.
 
+This POC is ultiamtely to enable Model Governance and access to an LLM provider like Bedrock, OpenAI or [DataBricks Genie API](https://docs.databricks.com/aws/en/genie/conversation-api)
 
-![proxy image](images/proxy_uc_ginie.drawio.png)
+Target Flow:
+
+![proxy image](images/proxy_uc_ginie-main.drawio.png)
+
+POC Flow:
+
+![proxy poc image](images/proxy_uc_ginie-poc.drawio.png)
+
 
 ## 🔧 Setup Instructions
 Install `uv` as package manager if you haven't already
@@ -69,18 +77,18 @@ For this POC, we provide the ability to change use case id over time ad follow:
   headers to the chat server will use the user's selected use-case ID.
 
 ---
-## POC
 
+## 🏗️ POC System Architecture
 For a light POC, we will go with `Fast API` for the proxy, `Ollama` for the Chat server to mimin DataBricks chat api, and `Chainlit` for the app chat client as follow:
-![proxy poc image](images/proxy_uc_ginie-poc.drawio.png)
-
----
-## 🏗️ System Architecture
 
 - FastAPI Proxy Server (Port 8001) - Controls traffic based on `X-Use-Case-ID` header
 - Dummy Chat Server (Port 8002) - Backend service with the `/api/2.0/genie_dummy/spaces/start-conversation` endpoint. We will replace it down the road with the real Geni app (and part of appspace)
 - Chainlit Client (Port 8000) - Interactive chat interface that emits the custom header
 - Testing Scripts - Automated tests for different use case scenarios
+
+## 🏗️ For Target System Architecture and Implementation
+We would replace the Fast API with Envoy proxy and use `lua` filter or `http_filters` to inspect headers and allow or deny traffic.
+WE would replace Ollama with an LLM Prpvoider like DataBricks Genie (or AWS Bedrock or Azure OpenAI).  
 
 
 ## 🎯 Key Features
