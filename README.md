@@ -3,14 +3,19 @@
 Light poc to restrict access to an LLM Chat api based on some policy.  
 We will implement a lightweight proxy that checks on policy condition before allowing or blocking traffic to the API.
 
-This POC is ultiamtely to enable Model Governance and access to an LLM provider like Bedrock, OpenAI or [DataBricks Genie API](https://docs.databricks.com/aws/en/genie/conversation-api)
+This POC is ultiamtely to enable Model Governance and access to an LLM provider like Bedrock, OpenAI or [DataBricks Genie API](https://docs.databricks.com/aws/en/genie/conversation-api).
+More specifically It checks for `X-Use-Case-ID` header presence and if its value belongs to an Allow list.
 
-Target Flow:
+
+Target Flow:  
+The Proxy would be envoy proxy and use an allow list of use cases and some filtering in `lua`.
+See [readme_envoy](readme_envoy.md) for more information.
 
 ![proxy image](images/proxy_uc_ginie-main.drawio.png)
 
-POC Flow:
 
+POC Flow:  
+The POC would use a light Fast API proxy and a chainlit client app talking to Llama3.1 served locally via Ollama:
 ![proxy poc image](images/proxy_uc_ginie-poc.drawio.png)
 
 
